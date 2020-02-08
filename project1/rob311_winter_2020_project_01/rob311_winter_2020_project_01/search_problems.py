@@ -141,7 +141,7 @@ class GridSearchProblem(SimpleSearchProblem):
         self.M = M
         self.N = N
         self.grid_map = grid_map
-        # Zero the inital and goal states
+        # Zero the initial and goal states
         x, y = self.get_position(init_state)
         self.grid_map[int(x), int(y)] = False
         for state in goal_states:

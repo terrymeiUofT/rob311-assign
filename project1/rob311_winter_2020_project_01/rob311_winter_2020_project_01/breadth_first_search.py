@@ -21,9 +21,8 @@ def breadth_first_search(problem):
     num_nodes_expanded = 0
     path = []
 
-    node_path = []
-    past = []
-    queue = []
+    past = {}
+    queue = {}
     cur_state = problem.init_state
     # create init node
     action_list = problem.get_actions(cur_state)
@@ -32,25 +31,20 @@ def breadth_first_search(problem):
     cur_node = cur_node_q[0]
     while not problem.goal_test(cur_node.state):
         cur_node = cur_node_q.pop(0)
-        node_path.append(cur_node)
-        past.append(cur_node.state)
+        past.update({str(cur_node.state): cur_node})
         for action in cur_node.action:
             child_state = problem.transition(cur_node.state, action)
-            # create child node
-            child_node = Node(cur_node, child_state, problem.get_actions(child_state), 1)
-            if (child_state not in past) and (child_state not in queue):
+            if (past.get(str(child_state)) is None) and (queue.get(str(child_state)) is None):
+                # create child node
+                child_node = Node(cur_node, child_state, problem.get_actions(child_state), 1)
                 cur_node_q.append(child_node)
-                queue.append(child_state)
-                if len(cur_node_q) > max_frontier_size:
-                    max_frontier_size = len(cur_node_q)
+                queue.update({str(child_state): child_node})
+                # if len(cur_node_q) > max_frontier_size:
+                #     max_frontier_size = len(cur_node_q)
         num_nodes_expanded += 1
 
     # backtrack to find the shortest path
-    path.append(cur_node.state)
-    while (cur_node.state != problem.init_state):
-        path.append(cur_node.parent.state)
-        cur_node = cur_node.parent
-    path.reverse()
+    path = problem.trace_path(cur_node, problem.init_state)
 
     return path, num_nodes_expanded, max_frontier_size
 
@@ -88,6 +82,17 @@ if __name__ == '__main__':
     init_state = 0
     problem = GraphSearchProblem(goal_states, init_state, V, E)
     path, num_nodes_expanded, max_frontier_size = breadth_first_search(problem)
+    correct = problem.check_graph_solution(path)
+    print("Solution is correct: {:}".format(correct))
+    print(path)
+    print('number of nodes expanded: ', num_nodes_expanded)
+    print('max frontier size: ', max_frontier_size)
+
+    # twitter dataset
+    E_twitter = np.load('twitter_edges_project_01.npy')
+    V_twitter = np.unique(E_twitter)
+    twitter_problem = GraphSearchProblem([59999], 0, V_twitter, E_twitter)
+    path, num_nodes_expanded, max_frontier_size = breadth_first_search(twitter_problem)
     correct = problem.check_graph_solution(path)
     print("Solution is correct: {:}".format(correct))
     print(path)
