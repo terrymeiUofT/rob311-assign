@@ -224,6 +224,7 @@ def get_random_grid_problem(p_occ, M, N):
     :param N: height (y-dimension) in integer number of cells
     :return: instance of GridSearchProblem
     """
+
     grid_map = np.random.rand(M, N) <= p_occ
     init_state = np.random.randint(M*N)
     goal_state = np.random.randint(M*N)

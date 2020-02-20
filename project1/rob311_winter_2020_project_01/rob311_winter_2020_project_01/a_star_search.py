@@ -1,5 +1,6 @@
 import queue
 import numpy as np
+import matplotlib.pyplot as plt
 from search_problems import Node, GridSearchProblem, get_random_grid_problem
 
 
@@ -29,27 +30,28 @@ def a_star_search(problem):
     cur_node_q = queue.PriorityQueue()
     cur_node_q.put((problem.heuristic(init_node.state), init_node))
     cur_node = init_node
-    while not problem.goal_test(cur_node.state):
+
+    while True:
+        if cur_node_q.empty():  # failure to find a path
+            return [], num_nodes_expanded, max_frontier_size
+
         cur_f, cur_node = cur_node_q.get()
-        cur_h = problem.heuristic(cur_node.state)
+        if problem.goal_test(cur_node.state):
+            # backtrack to find the shortest path
+            path = problem.trace_path(cur_node, problem.init_state)
+            return path, num_nodes_expanded, max_frontier_size
+
         past.update({str(cur_node.state): cur_node})
-        for action in cur_node.action:
-            child_state = problem.transition(cur_node.state, action)
-            if (past.get(str(child_state)) is None) and (frontier.get(str(child_state)) is None):
-                # create child node
-                child_node = Node(cur_node, child_state, problem.get_actions(child_state), 1)
-                h_cost = problem.heuristic(child_state)
-                g_cost = cur_f - cur_h
-                cur_node_q.put((h_cost + g_cost + 1, child_node))
-                frontier.update({str(child_state): child_node})
-                # if cur_node_q.qsize() > max_frontier_size:
-                #     max_frontier_size = cur_node_q.qsize()
-        num_nodes_expanded += 1
-
-    # backtrack to find the shortest path
-    path = problem.trace_path(cur_node, problem.init_state)
-
-    return path, num_nodes_expanded, max_frontier_size
+        for action in problem.get_actions(cur_node.state):
+            child_node = problem.get_child_node(cur_node, action)
+            num_nodes_expanded += 1
+            if (past.get(str(child_node.state)) is None) and (frontier.get(str(child_node.state)) is None):
+                h_cost = problem.heuristic(child_node.state)
+                cur_node_q.put((child_node.path_cost + h_cost, child_node))
+                frontier.update({str(child_node.state): child_node})
+            elif frontier.get(str(child_node.state)) is not None:
+                if child_node.path_cost < frontier.get(str(child_node.state)).path_cost:
+                    frontier.update({str(child_node.state): child_node})
 
 
 def search_phase_transition():
@@ -63,25 +65,46 @@ def search_phase_transition():
     ####
     #   REPLACE THESE VALUES
     ####
-    transition_start_probability = -1.0
-    transition_end_probability = -1.0
-    peak_nodes_expanded_probability = -1.0
+    transition_start_probability = 0.3
+    transition_end_probability = 0.5
+    peak_nodes_expanded_probability = 0.4
     return transition_start_probability, transition_end_probability, peak_nodes_expanded_probability
 
 
 if __name__ == '__main__':
     # Test your code here!
     # Create a random instance of GridSearchProblem
-    p_occ = 0.25
-    M = 30
-    N = 30
-    problem = get_random_grid_problem(p_occ, M, N)
-    # Solve it
-    path, num_nodes_expanded, max_frontier_size = a_star_search(problem)
-    # Check the result
-    correct = problem.check_solution(path)
-    print("Solution is correct: {:}".format(correct))
-    # Plot the result
-    problem.plot_solution(path)
+    p_occ = 0.3
+    M = 100
+    N = 100
+    # problem = get_random_grid_problem(p_occ, M, N)
+    # # Solve it
+    # path, num_nodes_expanded, max_frontier_size = a_star_search(problem)
+    #
+    # # Check the result
+    # correct = problem.check_solution(path)
+    # print("Solution is correct: {:}".format(correct))
+    # # Plot the result
+    # problem.plot_solution(path)
 
     # Experiment and compare with BFS
+    x = []
+    solvability = []
+    effort = []
+    for i in np.arange(0.1, 0.95, 0.05):
+        x.append(i)
+        node_count = 0
+        solved = 0
+        for j in range(100):
+            problem = get_random_grid_problem(i, M, N)
+            path, num_nodes_expanded, max_frontier_size = a_star_search(problem)
+            node_count += num_nodes_expanded
+            if path != []:
+                solved = solved + 1
+        effort.append(node_count / 100)
+        solvability.append(solved / 100)
+
+    fig, ax = plt.subplots(2, 1)
+    ax[0].plot(x, solvability)
+    ax[1].plot(x, effort)
+    plt.show()
