@@ -35,11 +35,66 @@ def min_conflicts_n_queens(initialization: list) -> (list, int):
     num_steps = 0
     max_steps = 1000
 
+    # build a conflict map of 3 parts: horizontal, posdiag, negdiag
+    horizontal = np.zeros(N)
+    posdiag = np.zeros(2*N-1)   # there are 2N-1 diagonals in a NxN board
+    negdiag = np.zeros(2*N-1)
+    for col in range(N):
+        Q_row = solution[col]
+        horizontal[Q_row] += 1
+        Q_posdiag = N - 1 + (col - Q_row)
+        posdiag[Q_posdiag] += 1
+        Q_negdiag = col + Q_row
+        negdiag[Q_negdiag] += 1
+
     for idx in range(max_steps):
         ## YOUR CODE HERE
-        pass
+        if check(horizontal, posdiag, negdiag) == True:
+            return solution, num_steps
 
-    return solution, num_steps
+        # pick a random col and find out the conflict situation on this col
+        rand_col = np.random.choice(solution.shape[0])
+        old_row = solution[rand_col]
+        col_conflict = count_col_conflict(N, horizontal, posdiag, negdiag, rand_col)
+        col_conflict[old_row] -= 3      # counted extra 3 times where Q is placed
+
+        if col_conflict[old_row] == 0:
+            pass
+        else:
+            # find out the min row on this column, randomly break ties
+            min_row = np.argwhere(col_conflict == col_conflict.min())
+            rand_idx = np.random.choice(min_row.shape[0])
+            new_row = min_row[rand_idx]
+
+            # update: solution, horizontal, posdiag, negdiag
+            solution[rand_col] = new_row
+            horizontal[old_row] -= 1
+            horizontal[new_row] += 1
+            posdiag[N-1+(rand_col-old_row)] -= 1
+            posdiag[N-1+(rand_col-new_row)] += 1
+            negdiag[rand_col+old_row] -= 1
+            negdiag[rand_col+new_row] += 1
+
+        num_steps += 1
+
+    return [], -1
+
+
+def count_col_conflict(N, horizontal, posdiag, negdiag, col):
+    col_conflict = np.zeros(N)
+    for row in range(N):
+        horiz_conf = horizontal[row]
+        posdiag_conf = posdiag[N-1+(col-row)]
+        negdiag_conf = negdiag[col+row]
+        col_conflict[row] = horiz_conf + posdiag_conf + negdiag_conf
+    return col_conflict
+
+
+def check(horizontal, posdiag, negdiag):
+    if (max(horizontal) == 1) and (max(posdiag) == 1) and (max(negdiag) == 1):
+        return True
+    else:
+        return False
 
 
 if __name__ == '__main__':

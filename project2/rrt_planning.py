@@ -3,7 +3,6 @@
 """
 import random
 import math
-
 import numpy as np
 
 """
@@ -77,9 +76,20 @@ def planning(rrt_dubins, display_map=False):
         i += 1
 
         # Generate a random vehicle state (x, y, yaw)
+        rand_x = random.randint(rrt_dubins.x_lim[0]*100, rrt_dubins.x_lim[1]*100) / 100
+        rand_y = random.randint(rrt_dubins.y_lim[0]*100, rrt_dubins.y_lim[1]*100) / 100
+        rand_yaw = np.deg2rad(random.randint(0, 360))
+        rand_node = rrt_dubins.Node(rand_x, rand_y, rand_yaw)
 
         # Find an existing node nearest to the random vehicle state
-        new_node = rrt_dubins.propogate(rrt_dubins.Node(0,0,0), rrt_dubins.Node(1,1,0)) #example of usage
+        min_dist = float('inf')
+        nearest_node = None
+        for node in rrt_dubins.node_list:
+            dist = calc_dist_beteen_nodes(node, rand_node)
+            if dist < min_dist:
+                min_dist = dist
+                nearest_node = node
+        new_node = rrt_dubins.propogate(nearest_node, rand_node)
 
         # Check if the path between nearest node and random state has obstacle collision
         # Add the node to nodes_list if it is valid
@@ -92,13 +102,28 @@ def planning(rrt_dubins, display_map=False):
             rrt_dubins.draw_graph()
 
         # Check if new_node is close to goal
-        if True:
+        if rrt_dubins.calc_dist_to_goal(new_node.x, new_node.y) < 1:
             print("Iters:", i, ", number of nodes:", len(rrt_dubins.node_list))
-            break
+            to_goal_node = rrt_dubins.propogate(new_node, rrt_dubins.goal)
+            if rrt_dubins.check_collision(to_goal_node):
+                rrt_dubins.node_list.append(to_goal_node)
+                break
 
     if i == rrt_dubins.max_iter:
         print('reached max iterations')
 
     # Return path, which is a list of nodes leading to the goal
+    path = []
+    path.append(to_goal_node)
+    cur_node = to_goal_node
+    while cur_node != rrt_dubins.start:
+        cur_node = cur_node.parent
+        path.append(cur_node)
+    path.reverse()
+    return path
 
-    return None
+
+def calc_dist_beteen_nodes(from_node, to_node):
+    dx = from_node.x - to_node.x
+    dy = from_node.y - to_node.y
+    return math.hypot(dx, dy)

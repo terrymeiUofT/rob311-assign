@@ -24,12 +24,28 @@ def pl_fc_entails(symbols_list : list, KB_clauses : list, known_symbols : list, 
     """
 
     ### START: Your code
+    inferred = {}
+    for symb in symbols_list:
+        inferred.update({str(symb): False})
+    count = {}
+    for symb in known_symbols:
+        count.update({str(symb): 0})
+    for kb_clause in KB_clauses:
+        symb = kb_clause.conclusion
+        c = len(kb_clause.body)
+        count.update({str(symb): c})
 
-
-
-
-
-
+    while known_symbols:
+        p = known_symbols.pop(0)
+        if p == query:
+            return True
+        if inferred[str(p)] == False:
+            inferred[str(p)] = True
+            for c in KB_clauses:
+                if p in c.body:
+                    count[str(c.conclusion)] -= 1
+                    if count[str(c.conclusion)] == 0:
+                        known_symbols.append(c.conclusion)
 
     return False # remove line if needed
     ### END: Your code
@@ -39,12 +55,12 @@ def pl_fc_entails(symbols_list : list, KB_clauses : list, known_symbols : list, 
 if __name__ == '__main__':
 
     # Symbols used in this inference problem (Has to be Integers)
-    symbols = [1,2,9,4,5]
+    symbols = [1, 2, 9, 4, 5]
 
     # Clause a: 1 and 2 => 9
     # Clause b: 9 and 4 => 5
     # Clause c: 1 => 4
-    KB = [definite_clause([1, 2], 9), definite_clause([9,4], 5), definite_clause([1], 4)]
+    KB = [definite_clause([1, 2], 9), definite_clause([9, 4], 5), definite_clause([1], 4)]
 
     # Known Symbols 1, 2
     known_symbols = [1, 2]
