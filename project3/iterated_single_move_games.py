@@ -171,7 +171,10 @@ def play_game(player1, player2, game_matrix: np.ndarray, N: int = 1000) -> (int,
 
 class StudentAgent(IteratedGamePlayer):
     """
-    YOUR DOCUMENTATION GOES HERE!
+    My algorithm samples my first 20 moves and opponent's first 20 moves to determine opponent's type.
+    This should be able to categorize the opponent into 4 types: dumb, copycat, goldfish, and others.
+    My algorithm has specific response to the first 3 types, and will try to beat them every time.
+    For the other type, I do not have an optimal response to win every time.
     """
     def __init__(self, game_matrix: np.ndarray):
         """
@@ -179,8 +182,11 @@ class StudentAgent(IteratedGamePlayer):
         :param game_matrix: square payoff matrix for the game being played.
         """
         super(StudentAgent, self).__init__(game_matrix)
-        # YOUR CODE GOES HERE
-        pass
+        self.opp_20move = np.zeros(20)    # used to sample opponent's first 20 moves to determine its agent type
+        self.my_20move = np.zeros(20)     # used to remember my first 20 moves
+        self.opp_lastmove = 0
+        self.my_lastmove = 0
+        self.counter = 0
 
     def make_move(self) -> int:
         """
@@ -188,7 +194,26 @@ class StudentAgent(IteratedGamePlayer):
         :return: an int in (0, ..., n_moves-1) representing your move
         """
         # YOUR CODE GOES HERE
-        pass
+        if self.counter < 20:
+            return 1
+        else:
+            opp_type = self.decide_type()
+            if opp_type == 'dumb':
+                return 1
+            elif opp_type == 'copycat':
+                if self.my_lastmove == 0:
+                    return 1
+                elif self.my_lastmove == 1:
+                    return 2
+                else:
+                    return 0
+            elif opp_type == 'goldfish':
+                if self.my_lastmove == 0:
+                    return 2
+                elif self.my_lastmove == 1:
+                    return 0
+                else:
+                    return 1
 
     def update_results(self, my_move, other_move):
         """
@@ -198,7 +223,12 @@ class StudentAgent(IteratedGamePlayer):
         :return: nothing
         """
         # YOUR CODE GOES HERE
-        pass
+        if self.counter < 20:
+            self.opp_20move[self.counter] = other_move
+            self.my_20move[self.counter] = my_move
+        self.my_lastmove = my_move
+        self.opp_lastmove = other_move
+        self.counter += 1
 
     def reset(self):
         """
@@ -206,7 +236,26 @@ class StudentAgent(IteratedGamePlayer):
         :return: nothing
         """
         # YOUR CODE GOES HERE
-        pass
+        self.opp_20move = np.zeros(20)
+        self.my_20move = np.zeros(20)
+        self.opp_lastmove = 0
+        self.my_lastmove = 0
+        self.counter = 0
+
+    def decide_type(self):
+        """
+        This method uses opp_20move and my_20move to decide opponent's type
+        :return: nothing
+        """
+        if np.count_nonzero(self.opp_20move) == 0:
+            return 'dumb'
+        else:
+            my_19 = self.my_20move[0:18]
+            opp_19 = self.opp_20move[1:19]
+            if np.array_equal(my_19, opp_19):
+                return 'copycat'
+            else:
+                return 'goldfish'
 
 
 if __name__ == '__main__':
@@ -222,6 +271,7 @@ if __name__ == '__main__':
                             [-1.0, 1.0, 0.0]])
     uniform_player = UniformPlayer(game_matrix)
     first_move_player = FirstMovePlayer(game_matrix)
+    copycat_player = CopycatPlayer(game_matrix)
     uniform_score, first_move_score = play_game(uniform_player, first_move_player, game_matrix)
 
     print("Uniform player's score: {:}".format(uniform_score))

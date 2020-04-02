@@ -16,6 +16,24 @@ def dt_entropy(goal, examples):
     entropy = 0.
     # Be careful to check the number of examples
     # Avoid NaN examples by treating the log2(0.0) = 0
+    outcome = {}
+    data_count = 0
+    for s in examples:
+        data_count += 1
+        if str(s[-1]) not in outcome:
+            outcome.update({str(s[-1]): 0})
+        outcome[str(s[-1])] += 1
+
+    prob = []
+    for item in outcome.items():
+        prob.append(item[1]/float(data_count))
+
+    for val in prob:
+        if val == 0.0:
+            pass
+        else:
+            entropy += (-1) * val * np.log2(val)
+
     return entropy
 
 
@@ -32,6 +50,28 @@ def dt_cond_entropy(attribute, col_idx, goal, examples):
     """
     # INSERT YOUR CODE HERE.
     cond_entropy = 0.0
+    data_count = 0
+    outcome = {}
+    for i in range(len(attribute[1])):
+        outcome.update({str(i): 0})
+
+    for s in examples:
+        data_count += 1
+        # categorize and count based on attribute x_n
+        if str(s[col_idx]) not in outcome:
+            outcome.update({str(s[col_idx]): 0})
+        outcome[str(s[col_idx])] += 1
+
+    attr_prob = {}
+    for item in outcome.items():
+        attr_prob.update({str(item[0]): item[1]/float(data_count)})
+
+    for n in range(len(attribute[1])):
+        chosen_examples = []
+        for s in examples:
+            if s[col_idx] == n:
+                chosen_examples.append(s)
+        cond_entropy += attr_prob[str(n)] * dt_entropy(goal, chosen_examples)
 
     return cond_entropy
 
@@ -50,7 +90,9 @@ def dt_info_gain(attribute, col_idx, goal, examples):
     """
     # INSERT YOUR CODE HERE.
     info_gain = 0.
-
+    B = dt_entropy(goal, examples)
+    Remainder = dt_cond_entropy(attribute, col_idx, goal, examples)
+    info_gain = B - Remainder
     return info_gain
 
 
@@ -68,6 +110,32 @@ def dt_intrinsic_info(attribute, col_idx, examples):
     # Be careful to check the number of examples
     # Avoid NaN examples by treating the log2(0.0) = 0
     intrinsic_info = 0.
+    pos_k = {}
+    neg_k = {}
+    num_pos = 0
+    num_neg = 0
+    for i in range(len(attribute[1])):
+        pos_k.update({str(i): 0})
+    for i in range(len(attribute[1])):
+        neg_k.update({str(i): 0})
+
+    for s in examples:
+        if s[-1] == 1:
+            num_pos += 1
+            if str(s[col_idx]) in pos_k:
+                pos_k[str(s[col_idx])] += 1
+        else:
+            num_neg += 1
+            if str(s[col_idx]) in neg_k:
+                neg_k[str(s[col_idx])] += 1
+
+    for k in range(len(attribute[1])):
+        ratio = (pos_k[str(k)] + neg_k[str(k)]) / (num_pos + num_neg)
+        if ratio == 0:
+            intrinsic_info -= 0
+        else:
+            intrinsic_info -= ratio * np.log2(ratio)
+
     return intrinsic_info
 
 
@@ -85,7 +153,12 @@ def dt_gain_ratio(attribute, col_idx, goal, examples):
     # INSERT YOUR CODE HERE.
     # Avoid NaN examples by treating 0.0/0.0 = 0.0
     gain_ratio = 0.
-
+    gain = dt_info_gain(attribute, col_idx, goal, examples)
+    intrinsic_info = dt_intrinsic_info(attribute, col_idx, examples)
+    if intrinsic_info == 0:
+        gain_ratio = 0
+    else:
+        gain_ratio = gain / intrinsic_info
     return gain_ratio
 
 
@@ -105,25 +178,66 @@ def learn_decision_tree(parent, attributes, goal, examples, score_fun):
     # YOUR CODE GOES HERE
     node = None
     # 1. Do any examples reach this point?
-
+    if len(examples) == 0:
+        node = TreeNode(parent, attributes, examples, True, plurality_value(goal, parent.examples))
+        return node
     # 2. Or do all examples have the same class/label? If so, we're done!
-
+    elif same_class_check(examples):
+        node = TreeNode(parent, attributes, examples, True, examples[0][-1])
+        return node
     # 3. No attributes left? Choose the majority class/label.
-
+    elif empty_check(attributes):
+        node = TreeNode(parent, attributes, examples, True, plurality_value(goal, examples))
+        return node
     # 4. Otherwise, need to choose an attribute to split on, but which one? Use score_fun and loop over attributes!
-
+    else:
         # Best score?
-
+        best_score = 0
+        best_idx = 0
+        for i in range(len(attributes)):
+            if attributes[i][0] != 'Removed':
+                temp_score = score_fun(attributes[i], i, goal, examples)
+                if temp_score > best_score:
+                    best_score = temp_score
+                    best_idx = i
+            else:
+                pass
+        A = attributes[best_idx]
         # NOTE: to pass the Autolab tests, when breaking ties you should always select the attribute with the smallest (i.e.
         # leftmost) column index!
 
         # Create a new internal node using the best attribute, something like:
         # node = TreeNode(parent, attributes[best_index], examples, False, 0)
-
+        node = TreeNode(parent, attributes[best_idx], examples, False, plurality_value(goal, examples))
         # Now, recurse down each branch (operating on a subset of examples below).
         # You should append to node.branches in this recursion
+        for v_k in range(len(A[1])):
+            exs = []
+            for e in examples:
+                if e[best_idx] == v_k:
+                    exs += [e.tolist()]
+            exs = np.array(exs)
+            sub_attributes = attributes[0:best_idx]
+            sub_attributes.append(('Removed', ()))
+            sub_attributes += attributes[best_idx+1:]
+            subtree = learn_decision_tree(node, sub_attributes, goal, exs, score_fun)
+            node.branches.append(subtree)
+        return node
 
-    return node
+
+def same_class_check(examples):
+    temp = examples[0][-1]
+    for s in examples:
+        if s[-1] != temp:
+            return False
+    return True
+
+
+def empty_check(attributes):
+    for i in attributes:
+        if len(i[1]) != 0:
+            return False
+    return True
 
 
 def plurality_value(goal: tuple, examples: np.ndarray) -> int:
@@ -239,6 +353,22 @@ if __name__ == '__main__':
                          [1, 1, 1, 1, 2, 2, 0, 1, 1, 1, 0],
                          [0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0],
                          [1, 1, 1, 1, 2, 0, 0, 0, 3, 2, 1]])
+
+    # test helper functions
+    entropy = dt_entropy(goal, examples)
+    print('entropy = ', entropy)
+
+    cond_entropy = dt_cond_entropy(a4, 4, goal, examples)
+    print('cond_entropy = ', cond_entropy)
+
+    info_gain = dt_info_gain(a4, 4, goal, examples)
+    print('info_gain = ', info_gain)
+
+    intrinsic_info = dt_intrinsic_info(a4, 4, examples)
+    print('intrinsic_info = ', intrinsic_info)
+
+    gain_ratio = dt_gain_ratio(a4, 4, goal, examples)
+    print('gain_ratio = ', gain_ratio)
 
     # Build your decision tree using dt_info_gain as the score function
     tree = learn_decision_tree(None, attributes, goal, examples, dt_info_gain)
