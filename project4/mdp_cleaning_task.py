@@ -44,7 +44,7 @@ class cleaning_env(mdp_env):
                  states = (0, 1, 2, 3, 4, 5), \
                  terminal = (0, 5), \
                  actions = (0, 1), \
-                 rewards = (4, 1, 0, 0, 0, 5)):
+                 rewards = (1, 0, 0, 0, 0, 5)):
         """
             INIT function
         """

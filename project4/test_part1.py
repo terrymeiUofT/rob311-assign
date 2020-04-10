@@ -43,8 +43,9 @@ def print_policy(env: cleaning_env, policy: any):
         if env.states[i] in env.terminal:
             print_string = print_string + "T"
         else:
-            print_string = print_string + env.action_names[policy[i, 0]]
+            print_string = print_string + env.action_names[policy[i]]
     print(print_string)
+
 
 # Check transition model
 def test_1():
@@ -52,6 +53,7 @@ def test_1():
     env.init_stochatic_model(get_transition_model)
     env.print_env()
     env.print_transition_model()
+
 
 # Check cleaning task
 def test_2():
@@ -65,6 +67,7 @@ def test_2():
     epsilon = 0.1
     policy = value_iteration(env, agent, epsilon)
     print_policy(env, policy)
+
 
 if __name__ == '__main__':
     test_1()

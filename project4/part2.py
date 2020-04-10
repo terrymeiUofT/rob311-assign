@@ -58,13 +58,49 @@ def policy_iteration(env: mdp_env, agent: mdp_agent, max_iter = 1000) -> np.ndar
        <agent>  Implicitly, you are populating the utlity matrix of
                 the mdp agent. Do not return this function.
     """
-    np.random.seed(1) # TODO: Remove this
+    # np.random.seed(1) # TODO: Remove this
 
-    policy = np.random.randint(len(env.actions), size=(len(env.states), 1))
+    policy = np.random.randint(len(env.actions), size=(len(env.states)))
     agent.utility = np.zeros([len(env.states), 1])
 
     ## START: Student code
+    iter = 0
+    while iter < max_iter:
+        iter += 1
+        policy_evaluation(env, agent, 20, policy)
+        unchanged = True
+        for s in range(len(env.states)):
+            max_sum = 0
+            opt_a = 0
+            for a in range(len(env.actions)):
+                temp_sum = 0
+                for s_prime in range(len(env.states)):
+                    temp_sum += env.transition_model[s, s_prime, a] * agent.utility[s_prime]
+                if temp_sum > max_sum:
+                    max_sum = temp_sum
+                    opt_a = a
 
+            # policy_sum = 0
+            # for s_p in range(len(env.states)):
+            #     policy_sum += env.transition_model[s, s_p, policy[s]] * agent.utility[s_p]
+            #
+            # if max_sum > policy_sum:
+            #     policy[s] = opt_a
+            #     unchanged = False
+
+            if opt_a != policy[s]:
+                policy[s] = opt_a
+                unchanged = False
+        if unchanged:
+            break
     ## END: Student code
-
     return policy
+
+
+def policy_evaluation(env: mdp_env, agent: mdp_agent, k, policy):
+    for i in range(k):
+        for s in range(len(env.states)):
+            util_sum = 0
+            for s_prime in range(len(env.states)):
+                util_sum += env.transition_model[s, s_prime, policy[s]] * agent.utility[s_prime]
+            agent.utility[s] = env.rewards[s] + agent.gamma * util_sum

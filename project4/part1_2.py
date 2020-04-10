@@ -63,6 +63,45 @@ def value_iteration(env: mdp_env, agent: mdp_agent, eps: float, max_iter = 1000)
     agent.utility = np.zeros([len(env.states), 1])
 
     ## START: Student code
+    iter = 0
+    while True:
+        iter += 1
+        delta = 0
+        U = agent.utility.copy()
+        for s in range(len(env.states)):        # for each state s in S do the following
+            max_sum = 0
+            for a in range(len(env.actions)):
+                temp_sum = 0
+                for s_prime in range(len(env.states)):
+                    temp_sum += env.transition_model[s, s_prime, a] * U[s_prime]
+                if temp_sum > max_sum:
+                    max_sum = temp_sum
+            # update utility function
+            agent.utility[s] = env.rewards[s] + agent.gamma * max_sum
+            # update delta
+            if abs(agent.utility[s] - U[s]) > delta:
+                delta = abs(agent.utility[s] - U[s])
 
+        # stay in while loop until this condition
+        if delta < (eps * (1 - agent.gamma) / agent.gamma):
+            break
+        # or has reached the maximum iteration
+        if iter == max_iter:
+            break
+
+    # determine the policy based on the optimal utility function
+    for i in range(len(policy)):
+        opt_a = 0
+        max_sum = 0
+        # find the optimal action that maximizes the expected utility
+        for a in range(len(env.actions)):
+            temp_sum = 0
+            for s_prime in range(len(env.states)):
+                temp_sum += env.transition_model[i, s_prime, a] * agent.utility[s_prime]
+            if temp_sum > max_sum:
+                max_sum = temp_sum
+                opt_a = a
+        policy[i] = opt_a
     ## END Student code
     return policy
+

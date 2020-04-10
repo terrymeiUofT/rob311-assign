@@ -41,6 +41,7 @@ INSTRUCTIONS
   - More implementation details in the Function comments
 """
 
+
 def get_transition_model(env: cleaning_env) -> np.ndarray:
     """
     get_transition_model method creates a table of size (SxSxA) that represents the
@@ -59,8 +60,25 @@ def get_transition_model(env: cleaning_env) -> np.ndarray:
     """
 
     P = np.zeros([len(env.states), len(env.states), len(env.actions)])
+    # P.shape = (6, 6, 2)
 
     ## START: Student Code
-
+    for s1 in range(P.shape[0]):
+        if s1 == 0:
+            P[s1][s1][1] = 0            # terminal states: once reached, stay
+            P[s1][s1][0] = 0            # no matter what the action is
+        elif s1 == P.shape[0] - 1:
+            P[s1][s1][1] = 0            # terminal states: once reached, stay
+            P[s1][s1][0] = 0            # no matter what the action is
+        else:
+            left = s1 - 1
+            right = s1 + 1
+            P[s1][right][1] = 0.8       # action: right; s2: right
+            P[s1][s1][1] = 0.15         # action: right; s2: s1 (stay)
+            P[s1][left][1] = 0.05       # action: right; s2: left
+            P[s1][right][0] = 0.05      # action: left; s2: right
+            P[s1][s1][0] = 0.15         # action: left; s2: s1 (stay)
+            P[s1][left][0] = 0.8        # action: left; s2: left
     ## END: Student code
     return P
+

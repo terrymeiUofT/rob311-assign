@@ -43,7 +43,7 @@ def print_policy(env: cleaning_env, policy: any):
         if env.states[i] in env.terminal:
             print_string = print_string + "T"
         else:
-            print_string = print_string + env.action_names[policy[i, 0]]
+            print_string = print_string + env.action_names[policy[i]]
     print(print_string)
 
 # Check Cleaning Task
